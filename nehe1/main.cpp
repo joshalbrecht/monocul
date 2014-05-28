@@ -21,38 +21,38 @@ HINSTANCE	hInstance;		// Holds The Instance Of The Application
 bool	keys[256];			// Array Used For The Keyboard Routine
 bool	active = TRUE;		// Window Active Flag Set To TRUE By Default
 bool	fullscreen = TRUE;	// Fullscreen Flag Set To Fullscreen Mode By Default
-bool    blend;				// Blending OFF/ON? ( NEW )
-bool	bp;					// B Pressed? ( NEW )
 
-GLfloat	xrot;				// X Rotation ( NEW )
-GLfloat	yrot;				// Y Rotation ( NEW )
-GLfloat	zrot;				// Z Rotation ( NEW )
-
-GLuint	texture[1];			// Storage For One Texture ( NEW )
+GLuint	texture[2];			// Storage For One Texture ( NEW )
 
 LRESULT	CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);	// Declaration For WndProc
 
-int LoadGLTextures()									// Load Bitmaps And Convert To Textures
-{
+bool loadTexture(const char* name, GLuint& loc) {
 	/* load an image file directly as a new OpenGL texture */
-	texture[0] = SOIL_load_OGL_texture
+	loc = SOIL_load_OGL_texture
 		(
-		"Data/glass.bmp",
+		name,
 		SOIL_LOAD_AUTO,
 		SOIL_CREATE_NEW_ID,
 		SOIL_FLAG_INVERT_Y
 		);
 
-	if (texture[0] == 0)
+	if (loc == 0)
 		return false;
 
 
 	// Typical Texture Generation Using Data From The Bitmap
-	glBindTexture(GL_TEXTURE_2D, texture[0]);
+	glBindTexture(GL_TEXTURE_2D, loc);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	return true;										// Return Success
+}
+
+int LoadGLTextures()									// Load Bitmaps And Convert To Textures
+{
+	return 
+		loadTexture("Data/glass.bmp", texture[0]) &&
+		loadTexture("Data/NeHe.bmp", texture[1]);
 }
 
 GLvoid ReSizeGLScene(GLsizei width, GLsizei height)		// Resize And Initialize The GL Window
@@ -89,8 +89,10 @@ int InitGL(GLvoid)										// All Setup For OpenGL Goes Here
 	glDepthFunc(GL_LEQUAL);								// The Type Of Depth Testing To Do
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);	// Really Nice Perspective Calculations
 
-	glColor4f(1.0f, 1.0f, 1.0f, 0.5f);         // Full Brightness, 50% Alpha ( NEW )
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE);       // Blending Function For Translucency Based On Source Alpha Value ( NEW )
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);       // Blending Function For Translucency Based On Source Alpha Value ( NEW )
+
+	glEnable(GL_BLEND);     // Turn Blending On
+	glDisable(GL_DEPTH_TEST);   // Turn Depth Testing Off
 
 	return TRUE;										// Initialization Went OK
 }
@@ -101,48 +103,28 @@ int DrawGLScene(GLvoid)									// Here's Where We Do All The Drawing
 	glLoadIdentity();									// Reset The View
 	glTranslatef(0.0f, 0.0f, -5.0f);
 
-	glRotatef(xrot, 1.0f, 0.0f, 0.0f);
-	glRotatef(yrot, 0.0f, 1.0f, 0.0f);
-	glRotatef(zrot, 0.0f, 0.0f, 1.0f);
-
-	glBindTexture(GL_TEXTURE_2D, texture[0]);
-
+	// Back Face
+	float backWidth = 2.0f;
+	float backHeight = 2.0f;
+	glBindTexture(GL_TEXTURE_2D, texture[1]);
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	glBegin(GL_QUADS);
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(-backWidth, -backHeight, -1.0f);
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(-backWidth, backHeight, -1.0f);
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(backWidth, backHeight, -1.0f);
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(backWidth, -backHeight, -1.0f);
+	glEnd();
+
 	// Front Face
+	glBindTexture(GL_TEXTURE_2D, texture[0]);
+	glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
+	glBegin(GL_QUADS);
 	glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f, 1.0f);
 	glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, -1.0f, 1.0f);
 	glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, 1.0f, 1.0f);
 	glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f, 1.0f, 1.0f);
-	// Back Face
-	glTexCoord2f(1.0f, 0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
-	glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.0f, 1.0f, -1.0f);
-	glTexCoord2f(0.0f, 1.0f); glVertex3f(1.0f, 1.0f, -1.0f);
-	glTexCoord2f(0.0f, 0.0f); glVertex3f(1.0f, -1.0f, -1.0f);
-	// Top Face
-	glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f, 1.0f, -1.0f);
-	glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, 1.0f, 1.0f);
-	glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, 1.0f, 1.0f);
-	glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, 1.0f, -1.0f);
-	// Bottom Face
-	glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
-	glTexCoord2f(0.0f, 1.0f); glVertex3f(1.0f, -1.0f, -1.0f);
-	glTexCoord2f(0.0f, 0.0f); glVertex3f(1.0f, -1.0f, 1.0f);
-	glTexCoord2f(1.0f, 0.0f); glVertex3f(-1.0f, -1.0f, 1.0f);
-	// Right face
-	glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, -1.0f, -1.0f);
-	glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, 1.0f, -1.0f);
-	glTexCoord2f(0.0f, 1.0f); glVertex3f(1.0f, 1.0f, 1.0f);
-	glTexCoord2f(0.0f, 0.0f); glVertex3f(1.0f, -1.0f, 1.0f);
-	// Left Face
-	glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
-	glTexCoord2f(1.0f, 0.0f); glVertex3f(-1.0f, -1.0f, 1.0f);
-	glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.0f, 1.0f, 1.0f);
-	glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f, 1.0f, -1.0f);
 	glEnd();
 
-	xrot += 0.03f;
-	yrot += 0.02f;
-	zrot += 0.04f;
 	return TRUE;										// Keep Going
 }
 
@@ -429,7 +411,8 @@ int WINAPI WinMain(HINSTANCE	hInstance,			// Instance
 	BOOL	done = FALSE;								// Bool Variable To Exit Loop
 
 	// Ask The User Which Screen Mode They Prefer
-	if (MessageBox(NULL, "Would You Like To Run In Fullscreen Mode?", "Start FullScreen?", MB_YESNO | MB_ICONQUESTION) == IDNO)
+	//if (MessageBox(NULL, "Would You Like To Run In Fullscreen Mode?", "Start FullScreen?", MB_YESNO | MB_ICONQUESTION) == IDNO)
+	if (TRUE)
 	{
 		fullscreen = FALSE;							// Windowed Mode
 	}
@@ -478,25 +461,6 @@ int WINAPI WinMain(HINSTANCE	hInstance,			// Instance
 				}
 			}
 
-			if (keys['B'] && !bp)               // Is B Key Pressed And bp FALSE?
-			{
-				bp = TRUE;                // If So, bp Becomes TRUE
-				blend = !blend;             // Toggle blend TRUE / FALSE   
-				if (blend)               // Is blend TRUE?
-				{
-					glEnable(GL_BLEND);     // Turn Blending On
-					glDisable(GL_DEPTH_TEST);   // Turn Depth Testing Off
-				}
-				else                    // Otherwise
-				{
-					glDisable(GL_BLEND);        // Turn Blending Off
-					glEnable(GL_DEPTH_TEST);    // Turn Depth Testing On
-				}
-			}
-			if (!keys['B'])                 // Has B Key Been Released?
-			{
-				bp = FALSE;               // If So, bp Becomes FALSE
-			}
 		}
 	}
 
