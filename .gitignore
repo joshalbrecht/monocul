@@ -1,3 +1,9 @@
+# Visual studio stuff
+Debug
+*.opensdf
+*.sdf
+*.suo
+
 # Compiled Object files
 *.slo
 *.lo
