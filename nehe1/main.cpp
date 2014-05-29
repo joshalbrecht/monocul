@@ -7,9 +7,13 @@
 */
 
 #include <windows.h>		// Header File For Windows
+
+#include <GL/glew.h>
 #include <stdio.h>			// Header File For Standard Input/Output
 #include <gl\gl.h>			// Header File For The OpenGL32 Library
 #include <gl\glu.h>			// Header File For The GLu32 Library
+#include <stdlib.h>
+#include <string.h>
 
 #include "SOIL.h"
 
@@ -25,6 +29,105 @@ bool	fullscreen = TRUE;	// Fullscreen Flag Set To Fullscreen Mode By Default
 GLuint	texture[2];			// Storage For One Texture ( NEW )
 
 LRESULT	CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);	// Declaration For WndProc
+
+#define printOpenGLError() printOglError(__FILE__, __LINE__)
+
+int printOglError(char *file, int line)
+{
+	//
+	// Returns 1 if an OpenGL error occurred, 0 otherwise.
+	//
+	GLenum glErr;
+	int    retCode = 0;
+
+	glErr = glGetError();
+	while (glErr != GL_NO_ERROR)
+	{
+		printf("glError in file %s @ line %d: %s\n", file, line, gluErrorString(glErr));
+		retCode = 1;
+		glErr = glGetError();
+	}
+	return retCode;
+}
+
+
+void printInfoLog(GLhandleARB obj)
+{
+	int infologLength = 0;
+	int charsWritten = 0;
+	char *infoLog;
+
+	glGetObjectParameterivARB(obj, GL_OBJECT_INFO_LOG_LENGTH_ARB,
+		&infologLength);
+
+	if (infologLength > 0)
+	{
+		infoLog = (char *)malloc(infologLength);
+		glGetInfoLogARB(obj, infologLength, &charsWritten, infoLog);
+		printf("%s\n", infoLog);
+		free(infoLog);
+	}
+}
+
+char *textFileRead(char *fn) {
+
+	FILE *fp;
+	char *content = NULL;
+
+	int count = 0;
+
+	if (fn != NULL) {
+		fp = fopen(fn, "rt");
+
+		if (fp != NULL) {
+
+			fseek(fp, 0, SEEK_END);
+			count = ftell(fp);
+			rewind(fp);
+
+			if (count > 0) {
+				content = (char *)malloc(sizeof(char)* (count + 1));
+				count = fread(content, sizeof(char), count, fp);
+				content[count] = '\0';
+			}
+			fclose(fp);
+		}
+	}
+	return content;
+}
+
+void setShaders() {
+
+	char *vs, *fs;
+
+	GLuint v = glCreateShader(GL_VERTEX_SHADER);
+	GLuint f = glCreateShader(GL_FRAGMENT_SHADER);
+
+	vs = textFileRead("toon.vert");
+	fs = textFileRead("toon.frag");
+
+	const char * vv = vs;
+	const char * ff = fs;
+
+	glShaderSource(v, 1, &vv, NULL);
+	glShaderSource(f, 1, &ff, NULL);
+
+	free(vs); free(fs);
+
+	glCompileShader(v);
+	glCompileShader(f);
+
+	printInfoLog(v);
+	printInfoLog(f);
+
+	GLuint p = glCreateProgram();
+
+	glAttachShader(p, v);
+	glAttachShader(p, f);
+
+	glLinkProgram(p);
+	glUseProgram(p);
+}
 
 bool loadTexture(const char* name, GLuint& loc) {
 	/* load an image file directly as a new OpenGL texture */
@@ -76,6 +179,17 @@ GLvoid ReSizeGLScene(GLsizei width, GLsizei height)		// Resize And Initialize Th
 
 int InitGL(GLvoid)										// All Setup For OpenGL Goes Here
 {
+
+	glewInit();
+
+	if (GLEW_ARB_vertex_shader && GLEW_ARB_fragment_shader)
+		printf("Ready for GLSL\n");
+	else {
+		printf("Not totally ready :( \n");
+		exit(1);
+	}
+	setShaders();
+
 	if (!LoadGLTextures())								// Jump To Texture Loading Routine ( NEW )
 	{
 		return FALSE;									// If Texture Didn't Load Return FALSE
