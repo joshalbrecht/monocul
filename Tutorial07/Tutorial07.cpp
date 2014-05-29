@@ -575,11 +575,6 @@ void Render()
 	float scale = 16.0f / 3.0f;
 	g_World = XMMatrixMultiply(XMMatrixScaling(scale, scale, scale), XMMatrixTranslation(-scale, 0.0f, 0.0f));
 
-    // Modify the color
-    g_vMeshColor.x = ( sinf( t * 1.0f ) + 1.0f ) * 0.5f;
-    g_vMeshColor.y = ( cosf( t * 3.0f ) + 1.0f ) * 0.5f;
-    g_vMeshColor.z = ( sinf( t * 5.0f ) + 1.0f ) * 0.5f;
-
     //
     // Clear the back buffer
     //
@@ -599,7 +594,7 @@ void Render()
     g_pImmediateContext->UpdateSubresource( g_pCBChangesEveryFrame, 0, nullptr, &cb, 0, 0 );
 
     //
-    // Render the cube
+    // Render the left image
     //
     g_pImmediateContext->VSSetShader( g_pVertexShader, nullptr, 0 );
     g_pImmediateContext->VSSetConstantBuffers( 0, 1, &g_pCBNeverChanges );
@@ -610,6 +605,15 @@ void Render()
     g_pImmediateContext->PSSetShaderResources( 0, 1, &g_pTextureRV );
     g_pImmediateContext->PSSetSamplers( 0, 1, &g_pSamplerLinear );
     g_pImmediateContext->DrawIndexed( 36, 0, 0 );
+
+	// Render the right image
+	float newScale = 4.0f * scale;
+	g_World = XMMatrixMultiply(XMMatrixScaling(newScale, newScale, newScale), XMMatrixTranslation(scale, 0.0f, 0.0f));
+	cb.mWorld = XMMatrixTranspose(g_World);
+	g_pImmediateContext->UpdateSubresource(g_pCBChangesEveryFrame, 0, nullptr, &cb, 0, 0);
+	g_pImmediateContext->VSSetConstantBuffers(2, 1, &g_pCBChangesEveryFrame);
+	g_pImmediateContext->PSSetConstantBuffers(2, 1, &g_pCBChangesEveryFrame);
+	g_pImmediateContext->DrawIndexed(36, 0, 0);
 
     //
     // Present our back buffer to our front buffer
