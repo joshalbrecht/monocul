@@ -579,7 +579,7 @@ void Render()
     //g_World = XMMatrixRotationY( t );
 
 	float scale = 16.0f / 3.0f;
-	g_World = XMMatrixMultiply(XMMatrixScaling(scale, scale, scale), XMMatrixTranslation(-scale, 0.0f, 0.0f));
+	g_World = XMMatrixMultiply(XMMatrixScaling(scale, scale, scale), XMMatrixTranslation(scale, 0.0f, 0.0f));
 
     //
     // Clear the back buffer
@@ -614,7 +614,7 @@ void Render()
 
 	// Render the right image
 	float newScale = 4.0f * scale;
-	g_World = XMMatrixMultiply(XMMatrixScaling(newScale, newScale, newScale), XMMatrixTranslation(scale, 0.0f, 0.0f));
+	g_World = XMMatrixMultiply(XMMatrixScaling(newScale, newScale, newScale), XMMatrixTranslation(-scale, 0.0f, 0.0f));
 	cb.mWorld = XMMatrixTranspose(g_World);
 	g_pImmediateContext->UpdateSubresource(g_pCBChangesEveryFrame, 0, nullptr, &cb, 0, 0);
 	g_pImmediateContext->VSSetConstantBuffers(2, 1, &g_pCBChangesEveryFrame);
