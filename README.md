@@ -1,4 +1,0 @@
-monocul
-=======
-
-experiments with rendering
