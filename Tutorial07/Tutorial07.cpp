@@ -214,8 +214,11 @@ HRESULT InitDevice()
 
     RECT rc;
     GetClientRect( g_hWnd, &rc );
-    UINT width = rc.right - rc.left;
-    UINT height = rc.bottom - rc.top;
+    //UINT width = rc.right - rc.left;
+    //UINT height = rc.bottom - rc.top;
+
+	UINT width = WIN_WIDTH;
+	UINT height = WIN_HEIGHT;
 
     UINT createDeviceFlags = 0;
 #ifdef _DEBUG
@@ -252,6 +255,7 @@ HRESULT InitDevice()
     sd.SampleDesc.Count = 1;
     sd.SampleDesc.Quality = 0;
     sd.Windowed = TRUE;
+	sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;     // allow full-screen switching
 
     for( UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++ )
     {
@@ -500,6 +504,8 @@ HRESULT InitDevice()
 void CleanupDevice()
 {
     if( g_pImmediateContext ) g_pImmediateContext->ClearState();
+
+	if (g_pSwapChain) g_pSwapChain->SetFullscreenState(FALSE, NULL);
 
     if( g_pSamplerLinear ) g_pSamplerLinear->Release();
     if( g_pTextureRV ) g_pTextureRV->Release();
