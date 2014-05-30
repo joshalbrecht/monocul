@@ -26,6 +26,7 @@ cbuffer cbChangesEveryFrame : register( b2 )
 {
     matrix World;
     float4 vMeshColor;
+	float mOffset;
 };
 
 
@@ -132,7 +133,7 @@ float4 PS( PS_INPUT input) : SV_Target
 	// Set the alpha channel to one.
 	color.a = 1.0f;
 
-	float4 center = float4(screenWidth/2.0f, screenHeight/2.0f, 0.0f, 0.0f);
+	float4 center = float4(screenWidth / 2.0f + mOffset, screenHeight / 2.0f, 0.0f, 0.0f);
 	float4 black = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	float outerRadius = 300.0f;
 	float innerRadius = 200.0f;

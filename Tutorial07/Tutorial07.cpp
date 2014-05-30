@@ -47,6 +47,7 @@ struct CBChangesEveryFrame
 {
     XMMATRIX mWorld;
     XMFLOAT4 vMeshColor;
+	float mOffset;
 };
 
 
@@ -570,6 +571,8 @@ void Render()
 
     // Update our time
     static float t = 0.0f;
+	static float offset = (float)WIN_WIDTH / 4.0f;
+	static ULONGLONG lastSecond = 0;
     if( g_driverType == D3D_DRIVER_TYPE_REFERENCE )
     {
         t += ( float )XM_PI * 0.0125f;
@@ -586,7 +589,17 @@ void Render()
     // Rotate cube around the origin
     //g_World = XMMatrixRotationY( t );
 
-	
+	bool tickHappened = FALSE;
+	if (t > lastSecond) {
+		if (lastSecond != 0) {
+			tickHappened = TRUE;
+		}
+		lastSecond = (ULONGLONG)t + 1;
+	}
+
+	if (tickHappened) {
+		offset *= -1.0f;
+	}
 
     //
     // Clear the back buffer
@@ -608,6 +621,7 @@ void Render()
 		CBChangesEveryFrame cb;
 		cb.mWorld = XMMatrixTranspose(g_World);
 		cb.vMeshColor = g_vMeshColor;
+		cb.mOffset = offset;
 		g_pImmediateContext->UpdateSubresource(g_pCBChangesEveryFrame, 0, nullptr, &cb, 0, 0);
 
 		//
