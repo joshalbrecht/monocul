@@ -71,7 +71,7 @@ PS_INPUT VS( VS_INPUT input )
 	output.tex = input.tex;
 
 	// Determine the floating point size of a texel for a screen with this specific width.
-	texelSize = 4.0f / screenWidth;
+	texelSize = 1.0f / screenWidth;
 
 	// Create UV coordinates for the pixel and its four horizontal neighbors on either side.
 	output.texCoord1 = input.tex + float2(texelSize * -4.0f, 0.0f);
@@ -132,5 +132,19 @@ float4 PS( PS_INPUT input) : SV_Target
 	// Set the alpha channel to one.
 	color.a = 1.0f;
 
-	return color;
+	float4 center = float4(screenWidth/2.0f, screenHeight/2.0f, 0.0f, 0.0f);
+	float4 black = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	float outerRadius = 300.0f;
+	float innerRadius = 200.0f;
+
+	float4 delta = abs(input.pos - center);
+	float dist = sqrt(delta.x*delta.x + delta.y*delta.y);
+	float x = clamp((dist-innerRadius) / (outerRadius - innerRadius), 0.0f, 1.0f);
+	float4 textColor = txDiffuse.Sample(samLinear, input.texCoord5);
+
+	//return x*textColor + (1.0f-x)*black;
+	return x*color +(1.0f - x)*textColor;
+
+	//return color;
+	//return txDiffuse.Sample(samLinear, input.texCoord5);
 }

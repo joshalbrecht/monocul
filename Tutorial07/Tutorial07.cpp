@@ -80,9 +80,11 @@ XMMATRIX                            g_View;
 XMMATRIX                            g_Projection;
 XMFLOAT4                            g_vMeshColor( 0.7f, 0.7f, 0.7f, 1.0f );
 
-int WIN_WIDTH = 1600;
-int WIN_HEIGHT = 600;
-
+//TODO: make some switch for these
+//int WIN_WIDTH = 1600;
+//int WIN_HEIGHT = 600;
+int WIN_WIDTH = 1920;
+int WIN_HEIGHT = 1080;
 
 //--------------------------------------------------------------------------------------
 // Forward declarations
@@ -487,8 +489,8 @@ HRESULT InitDevice()
 
     CBNeverChanges cbNeverChanges;
     cbNeverChanges.mView = XMMatrixTranspose( g_View );
-	cbNeverChanges.screenWidth = width;
-	cbNeverChanges.screenHeight = height;
+	cbNeverChanges.screenWidth = (float) width;
+	cbNeverChanges.screenHeight = (float) height;
     g_pImmediateContext->UpdateSubresource( g_pCBNeverChanges, 0, nullptr, &cbNeverChanges, 0, 0 );
 
     // Initialize the projection matrix
@@ -564,6 +566,8 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
 //--------------------------------------------------------------------------------------
 void Render()
 {
+	bool blurmode = TRUE;
+
     // Update our time
     static float t = 0.0f;
     if( g_driverType == D3D_DRIVER_TYPE_REFERENCE )
@@ -582,8 +586,7 @@ void Render()
     // Rotate cube around the origin
     //g_World = XMMatrixRotationY( t );
 
-	float scale = 16.0f / 3.0f;
-	g_World = XMMatrixMultiply(XMMatrixScaling(scale, scale, scale), XMMatrixTranslation(scale, 0.0f, 0.0f));
+	
 
     //
     // Clear the back buffer
@@ -595,35 +598,67 @@ void Render()
     //
     g_pImmediateContext->ClearDepthStencilView( g_pDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0 );
 
-    //
-    // Update variables that change once per frame
-    //
-    CBChangesEveryFrame cb;
-    cb.mWorld = XMMatrixTranspose( g_World );
-    cb.vMeshColor = g_vMeshColor;
-    g_pImmediateContext->UpdateSubresource( g_pCBChangesEveryFrame, 0, nullptr, &cb, 0, 0 );
+	if (blurmode) {
+		//
+		// Update variables that change once per frame
+		//
+		float scale = 1.5f * (16.0f / 3.0f);
+		g_World = XMMatrixScaling(scale, scale, scale);
 
-    //
-    // Render the left image
-    //
-    g_pImmediateContext->VSSetShader( g_pVertexShader, nullptr, 0 );
-    g_pImmediateContext->VSSetConstantBuffers( 0, 1, &g_pCBNeverChanges );
-    g_pImmediateContext->VSSetConstantBuffers( 1, 1, &g_pCBChangeOnResize );
-    g_pImmediateContext->VSSetConstantBuffers( 2, 1, &g_pCBChangesEveryFrame );
-    g_pImmediateContext->PSSetShader( g_pPixelShader, nullptr, 0 );
-    g_pImmediateContext->PSSetConstantBuffers( 2, 1, &g_pCBChangesEveryFrame );
-    g_pImmediateContext->PSSetShaderResources( 0, 1, &g_pTextureRV );
-    g_pImmediateContext->PSSetSamplers( 0, 1, &g_pSamplerLinear );
-    g_pImmediateContext->DrawIndexed( 36, 0, 0 );
+		CBChangesEveryFrame cb;
+		cb.mWorld = XMMatrixTranspose(g_World);
+		cb.vMeshColor = g_vMeshColor;
+		g_pImmediateContext->UpdateSubresource(g_pCBChangesEveryFrame, 0, nullptr, &cb, 0, 0);
 
-	// Render the right image
-	float newScale = 4.0f * scale;
-	g_World = XMMatrixMultiply(XMMatrixScaling(newScale, newScale, newScale), XMMatrixTranslation(-scale, 0.0f, 0.0f));
-	cb.mWorld = XMMatrixTranspose(g_World);
-	g_pImmediateContext->UpdateSubresource(g_pCBChangesEveryFrame, 0, nullptr, &cb, 0, 0);
-	g_pImmediateContext->VSSetConstantBuffers(2, 1, &g_pCBChangesEveryFrame);
-	g_pImmediateContext->PSSetConstantBuffers(2, 1, &g_pCBChangesEveryFrame);
-	g_pImmediateContext->DrawIndexed(36, 0, 0);
+		//
+		// Render the right image
+		//
+		g_pImmediateContext->VSSetShader(g_pVertexShader, nullptr, 0);
+		g_pImmediateContext->VSSetConstantBuffers(0, 1, &g_pCBNeverChanges);
+		g_pImmediateContext->VSSetConstantBuffers(1, 1, &g_pCBChangeOnResize);
+		g_pImmediateContext->VSSetConstantBuffers(2, 1, &g_pCBChangesEveryFrame);
+		g_pImmediateContext->PSSetShader(g_pPixelShader, nullptr, 0);
+		g_pImmediateContext->PSSetConstantBuffers(0, 1, &g_pCBNeverChanges);
+		g_pImmediateContext->PSSetConstantBuffers(2, 1, &g_pCBChangesEveryFrame);
+		g_pImmediateContext->PSSetShaderResources(0, 1, &g_pTextureRV);
+		g_pImmediateContext->PSSetSamplers(0, 1, &g_pSamplerLinear);
+		g_pImmediateContext->DrawIndexed(36, 0, 0);
+	}
+	else {
+		//
+		// Update variables that change once per frame
+		//
+		float scale = 16.0f / 3.0f;
+		g_World = XMMatrixMultiply(XMMatrixScaling(scale, scale, scale), XMMatrixTranslation(scale, 0.0f, 0.0f));
+
+		CBChangesEveryFrame cb;
+		cb.mWorld = XMMatrixTranspose(g_World);
+		cb.vMeshColor = g_vMeshColor;
+		g_pImmediateContext->UpdateSubresource(g_pCBChangesEveryFrame, 0, nullptr, &cb, 0, 0);
+
+		//
+		// Render the right image
+		//
+		g_pImmediateContext->VSSetShader(g_pVertexShader, nullptr, 0);
+		g_pImmediateContext->VSSetConstantBuffers(0, 1, &g_pCBNeverChanges);
+		g_pImmediateContext->VSSetConstantBuffers(1, 1, &g_pCBChangeOnResize);
+		g_pImmediateContext->VSSetConstantBuffers(2, 1, &g_pCBChangesEveryFrame);
+		g_pImmediateContext->PSSetShader(g_pPixelShader, nullptr, 0);
+		g_pImmediateContext->PSSetConstantBuffers(2, 1, &g_pCBChangesEveryFrame);
+		g_pImmediateContext->PSSetShaderResources(0, 1, &g_pTextureRV);
+		g_pImmediateContext->PSSetSamplers(0, 1, &g_pSamplerLinear);
+		g_pImmediateContext->DrawIndexed(36, 0, 0);
+
+		// Render the left image
+		float newScale = 4.0f * scale;
+		g_World = XMMatrixMultiply(XMMatrixScaling(newScale, newScale, newScale), XMMatrixTranslation(-scale, 0.0f, 0.0f));
+		cb.mWorld = XMMatrixTranspose(g_World);
+		g_pImmediateContext->UpdateSubresource(g_pCBChangesEveryFrame, 0, nullptr, &cb, 0, 0);
+		g_pImmediateContext->VSSetConstantBuffers(2, 1, &g_pCBChangesEveryFrame);
+		g_pImmediateContext->PSSetConstantBuffers(2, 1, &g_pCBChangesEveryFrame);
+		g_pImmediateContext->DrawIndexed(36, 0, 0);
+	}
+    
 
     //
     // Present our back buffer to our front buffer
