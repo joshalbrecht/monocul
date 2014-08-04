@@ -12,6 +12,7 @@
 //
 // Copyright (c) Microsoft Corporation. All rights reserved.
 //--------------------------------------------------------------------------------------
+#include <stdio.h>
 #include <windows.h>
 #include <d3d11_1.h>
 #include <d3dcompiler.h>
@@ -19,6 +20,7 @@
 #include <directxcolors.h>
 #include "DDSTextureLoader.h"
 #include "resource.h"
+#include "FW1FontWrapper.h"
 
 using namespace DirectX;
 
@@ -562,6 +564,24 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
 }
 
 
+void drawText(ID3D11DeviceContext *pContext, const WCHAR * text) {
+	IFW1Factory *pFW1Factory;
+	HRESULT hResult = FW1CreateFactory(FW1_VERSION, &pFW1Factory);
+
+	IFW1FontWrapper *pFontWrapper;
+	hResult = pFW1Factory->CreateFontWrapper(g_pd3dDevice, L"Arial", &pFontWrapper);
+
+	pFontWrapper->DrawString(
+		pContext,
+		text,// String
+		128.0f,// Font size
+		100.0f,// X position
+		50.0f,// Y position
+		0xff0099ff,// Text color, 0xAaBbGgRr
+		FW1_RESTORESTATE// Flags
+		);
+}
+
 //--------------------------------------------------------------------------------------
 // Render a frame
 //--------------------------------------------------------------------------------------
@@ -569,22 +589,29 @@ void Render()
 {
 	bool blurmode = TRUE;
 
-    // Update our time
+	static LARGE_INTEGER end;
+	static LARGE_INTEGER start;
+	static LARGE_INTEGER frequency;
+	if (::QueryPerformanceFrequency(&frequency) == FALSE)
+		throw "foo";
+
+
+    // Update our time (low res time)
     static float t = 0.0f;
 	static float offset = (float)WIN_WIDTH / 4.0f;
 	static ULONGLONG lastSecond = 0;
-    if( g_driverType == D3D_DRIVER_TYPE_REFERENCE )
-    {
-        t += ( float )XM_PI * 0.0125f;
-    }
-    else
-    {
+    //if( g_driverType == D3D_DRIVER_TYPE_REFERENCE )
+    //{
+    //    t += ( float )XM_PI * 0.0125f;
+    //}
+    //else
+    //{
         static ULONGLONG timeStart = 0;
         ULONGLONG timeCur = GetTickCount64();
         if( timeStart == 0 )
             timeStart = timeCur;
         t = ( timeCur - timeStart ) / 1000.0f;
-    }
+    //}
 
     // Rotate cube around the origin
     //g_World = XMMatrixRotationY( t );
@@ -672,6 +699,20 @@ void Render()
 		g_pImmediateContext->PSSetConstantBuffers(2, 1, &g_pCBChangesEveryFrame);
 		g_pImmediateContext->DrawIndexed(36, 0, 0);
 	}
+
+	if (::QueryPerformanceCounter(&end) == FALSE)
+		throw "foo";
+
+	double interval = static_cast<double>(end.QuadPart - start.QuadPart) / frequency.QuadPart;
+
+	double fps = 1.0 / interval;
+	WCHAR str[16];
+	WCHAR * fmt = L"FPS: %0.8f";
+	swprintf(str, 16, fmt, fps);
+	drawText(g_pImmediateContext, str);
+	
+	if (::QueryPerformanceCounter(&start) == FALSE)
+		throw "foo";
     
 
     //
